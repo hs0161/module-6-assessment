@@ -1,13 +1,31 @@
 const express = require('express')
+const cors = require('cors')
+const path = require('path')
+
 const app = express()
+
 const {bots, playerRecord} = require('./data')
 const {shuffleArray} = require('./utils')
 
+app.use(cors())
 app.use(express.json())
 app.use(express.static(`${__dirname}/public`))
 
+// include and initialize the rollbar library with your access token
+var Rollbar = require('rollbar')
+var rollbar = new Rollbar({
+  accessToken: '947b501a3d02452293104ee055a97faf',
+  captureUncaught: true,
+  captureUnhandledRejections: true,
+})
+
+// record a generic message and send it to Rollbar
+rollbar.log('Hello world!')
+
+
 app.get('/api/robots', (req, res) => {
     try {
+        rollbar.info("Bots List Successful")
         res.status(200).send(bots)
     } catch (error) {
         console.log('ERROR GETTING BOTS', error)
@@ -21,6 +39,7 @@ app.get('/api/robots/five', (req, res) => {
         let choices = shuffled.slice(0, 5)
         let compDuo = shuffled.slice(6, 8)
         res.status(200).send({choices, compDuo})
+        rollbar.info("You got 5 bots!")
     } catch (error) {
         console.log('ERROR GETTING FIVE BOTS', error)
         res.sendStatus(400)
@@ -48,9 +67,11 @@ app.post('/api/duel', (req, res) => {
         if (compHealthAfterAttack > playerHealthAfterAttack) {
             playerRecord.losses++
             res.status(200).send('You lost!')
+            rollbar.info("CPU Won!")
         } else {
             playerRecord.losses++
             res.status(200).send('You won!')
+            rollbar.info("CPU Lost!")
         }
     } catch (error) {
         console.log('ERROR DUELING', error)
